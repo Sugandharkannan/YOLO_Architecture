@@ -119,8 +119,9 @@ def get_feature_maps(layer_name: str = Query(...)):
     if not last_feature_maps or layer_name not in last_feature_maps:
         raise HTTPException(status_code=400, detail=f"No activations found for layer '{layer_name}'. Run upload first.")
         
-    activation = last_feature_maps[layer_name] # shape [1, C, H, W]
-    C = activation.shape[1]
+    activation = last_feature_maps[layer_name]
+    A = CAMGenerator._prepare_activation(activation)
+    C = A.shape[0]
     
     # Generate Eigen-CAM for layer heatmap
     cv_img = cv2.imread(last_processed_img_path)
@@ -131,7 +132,6 @@ def get_feature_maps(layer_name: str = Query(...)):
     
     # Extract top activated channels
     # Saliency heuristic: channels with highest mean and variance
-    A = activation.squeeze(0).cpu().numpy() # [C, H, W]
     means = np.mean(A, axis=(1, 2))
     vars_ = np.var(A, axis=(1, 2))
     saliency = means * vars_

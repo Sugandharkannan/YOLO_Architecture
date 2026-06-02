@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, Cpu, Sliders, Play, Settings, AlertTriangle, Layers, Info, Check, Activity, RefreshCw } from 'lucide-react';
+import { Upload, Cpu, Sliders, Play, AlertTriangle, Info, RefreshCw } from 'lucide-react';
 import { ArchitectureGraph } from './components/ArchitectureGraph';
 import { FeatureMapGrid } from './components/FeatureMapGrid';
 import { PipelineVisualizer } from './components/PipelineVisualizer';
@@ -62,9 +62,9 @@ export default function App() {
   // Hyperparameters Playground
   const [lr, setLr] = useState<number>(0.01);
   const [batchSize, setBatchSize] = useState<number>(16);
-  const [epochs, setEpochs] = useState<number>(50);
-  const [momentum, setMomentum] = useState<number>(0.937);
-  const [weightDecay, setWeightDecay] = useState<number>(0.0005);
+  const [epochs] = useState<number>(50);
+  const [momentum] = useState<number>(0.937);
+  const [weightDecay] = useState<number>(0.0005);
   
   const [boxLossW, setBoxLossW] = useState<number>(7.5);
   const [clsLossW, setClsLossW] = useState<number>(0.5);
@@ -72,14 +72,14 @@ export default function App() {
   
   const [mosaic, setMosaic] = useState<number>(1.0);
   const [mixup, setMixup] = useState<number>(0.0);
-  const [hsvH, setHsvH] = useState<number>(0.015);
-  const [rotation, setRotation] = useState<number>(0.0);
-  const [scaling, setScaling] = useState<number>(0.5);
-  const [flipping, setFlipping] = useState<number>(0.5);
+  const [hsvH] = useState<number>(0.015);
+  const [rotation] = useState<number>(0.0);
+  const [scaling] = useState<number>(0.5);
+  const [flipping] = useState<number>(0.5);
   
   const [confThres, setConfThres] = useState<number>(0.25);
   const [iouThres, setIouThres] = useState<number>(0.7);
-  const [nmsThres, setNmsThres] = useState<number>(0.45);
+  const [nmsThres] = useState<number>(0.45);
 
   // Simulator Data
   const [metricsBefore, setMetricsBefore] = useState<any>(null);
@@ -981,7 +981,6 @@ export default function App() {
                       // Normalise the magnitude visual heights
                       const maxVal = Math.max(...gradientFlow.magnitudes) || 1;
                       const heightPercent = `${Math.max(4, (mag / maxVal) * 90)}%`;
-                      const layerShortName = gradientFlow.layers[idx].replace("Layer ", "").slice(0, 7);
                       
                       return (
                         <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end group relative cursor-pointer">

@@ -5,14 +5,43 @@ from typing import Dict, Any, Tuple
 
 class CAMGenerator:
     @staticmethod
+    def _prepare_activation(activation_tensor: torch.Tensor) -> np.ndarray:
+        act_np = activation_tensor.detach().cpu().numpy()
+        
+        # Remove batch dimension if it is 1
+        if act_np.ndim > 1 and act_np.shape[0] == 1:
+            act_np = act_np[0]
+            
+        ndim = act_np.ndim
+        if ndim == 1:
+            return act_np.reshape(-1, 1, 1)
+        elif ndim == 2:
+            C, L = act_np.shape
+            side = int(np.sqrt(L))
+            if side * side == L:
+                H, W = side, side
+                return act_np.reshape(C, H, W)
+            else:
+                H = 1
+                W = L
+                return act_np.reshape(C, H, W)
+        elif ndim >= 3:
+            shape = act_np.shape
+            C = shape[0]
+            H = shape[1]
+            W = int(np.prod(shape[2:]))
+            return act_np.reshape(C, H, W)
+        else:
+            return act_np.reshape(1, 1, 1)
+
+    @staticmethod
     def generate_eigen_cam(activation_tensor: torch.Tensor, target_size: Tuple[int, int]) -> np.ndarray:
         """
         Computes Eigen-CAM for a given activation tensor.
         activation_tensor: torch.Tensor of shape [1, C, H, W]
         target_size: (width, height) to resize the final heatmap to
         """
-        # Detach and convert to CPU numpy
-        A = activation_tensor.squeeze(0).detach().cpu().numpy() # [C, H, W]
+        A = CAMGenerator._prepare_activation(activation_tensor)
         C, H, W = A.shape
         
         # Reshape to [C, H*W]
@@ -25,11 +54,6 @@ class CAMGenerator:
         try:
             # We want the first principal component of the spatial activations
             U, S, Vt = np.linalg.svd(A_mean, full_matrices=False)
-            # The first principal component is the first column of U projected back or just the first row of Vt
-            # Vt has shape [C, H*W] if svd is done on A_mean, wait, SVD on A_mean (C, HW) gives:
-            # U: [C, C]
-            # Vt: [C, HW]
-            # First right singular vector Vt[0] corresponds to the largest singular value.
             cam = Vt[0].reshape(H, W)
         except Exception:
             # Fallback if SVD fails: simple average of activations across channels
@@ -57,7 +81,7 @@ class CAMGenerator:
         Generates an attention map targeted at a specific bounding box.
         This represents the spatial areas that contributed to detecting that object.
         """
-        A = activation_tensor.squeeze(0).detach().cpu().numpy() # [C, H, W]
+        A = CAMGenerator._prepare_activation(activation_tensor)
         C, H, W = A.shape
         orig_w, orig_h = original_size
         

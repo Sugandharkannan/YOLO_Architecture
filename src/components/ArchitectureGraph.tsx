@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, ArrowDown, Layers, HelpCircle, HardDrive, Zap } from 'lucide-react';
+import { Layers } from 'lucide-react';
 
 interface LayerInfo {
   name: string;

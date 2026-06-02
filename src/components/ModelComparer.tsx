@@ -1,5 +1,4 @@
 import React from 'react';
-import { Layers, Zap, Cpu, BarChart3 } from 'lucide-react';
 
 interface ModelSpec {
   name: string;

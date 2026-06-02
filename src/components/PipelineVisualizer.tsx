@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Pause, RotateCcw, ShieldAlert, Settings2 } from 'lucide-react';
+import { Play, Pause, RotateCcw } from 'lucide-react';
 
 interface Step {
   id: number;
@@ -23,7 +23,7 @@ export const PipelineVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(true);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: any;
     if (isPlaying) {
       interval = setInterval(() => {
         setActiveStep((prev) => (prev + 1) % (PIPELINE_STEPS.length + 1));
