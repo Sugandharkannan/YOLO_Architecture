@@ -1,0 +1,10 @@
+# Ignore backend files to prevent Vercel from building Python serverless functions
+backend/
+yolov8n.pt
+
+# Ignore project tracking and local logs
+*.log
+task.md
+walkthrough.md
+implementation_plan.md
+.gemini/
