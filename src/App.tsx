@@ -32,6 +32,8 @@ interface LayerInfo {
   activation: string;
 }
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 export default function App() {
   // Tabs
   const [activeTab, setActiveTab] = useState<'explore' | 'gallery' | 'compare'>('explore');
@@ -111,7 +113,7 @@ export default function App() {
 
   const fetchLayerDetails = async () => {
     try {
-      const res = await fetch(`/api/layer-details?model_version=${modelVersion}`);
+      const res = await fetch(`${API_BASE}/api/layer-details?model_version=${modelVersion}`);
       const data = await res.json();
       setLayers(data);
     } catch (e) {
@@ -129,7 +131,7 @@ export default function App() {
     formData.append('model_version', modelVersion);
 
     try {
-      const res = await fetch('/api/upload', {
+      const res = await fetch(`${API_BASE}/api/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -150,7 +152,7 @@ export default function App() {
   const fetchFeatureMaps = async (layerName: string) => {
     setFeatureMapsLoading(true);
     try {
-      const res = await fetch(`/api/feature-maps?layer_name=${encodeURIComponent(layerName)}`);
+      const res = await fetch(`${API_BASE}/api/feature-maps?layer_name=${encodeURIComponent(layerName)}`);
       const data = await res.json();
       setFeatureMaps(data);
     } catch (e) {
@@ -162,7 +164,7 @@ export default function App() {
 
   const fetchWeightUpdates = async (layerName: string) => {
     try {
-      const res = await fetch(`/api/weight-updates?layer_name=${encodeURIComponent(layerName)}`);
+      const res = await fetch(`${API_BASE}/api/weight-updates?layer_name=${encodeURIComponent(layerName)}`);
       const data = await res.json();
       setWeightUpdateData(data);
     } catch (e) {
@@ -178,12 +180,12 @@ export default function App() {
     try {
       // 1. Fetch targeted Grad-CAM
       const bboxJson = JSON.stringify(box.bbox);
-      const camRes = await fetch(`/api/cam?layer_name=${encodeURIComponent(selectedLayer)}&bbox_json=${encodeURIComponent(bboxJson)}`);
+      const camRes = await fetch(`${API_BASE}/api/cam?layer_name=${encodeURIComponent(selectedLayer)}&bbox_json=${encodeURIComponent(bboxJson)}`);
       const camData = await camRes.json();
       setTargetedCam(camData.cam_base64);
 
       // 2. Fetch explanation
-      const expRes = await fetch(`/api/explain?class_name=${encodeURIComponent(box.class_name)}&confidence=${box.confidence}`);
+      const expRes = await fetch(`${API_BASE}/api/explain?class_name=${encodeURIComponent(box.class_name)}&confidence=${box.confidence}`);
       const expData = await expRes.json();
       setBboxExplanation(expData);
     } catch (e) {
@@ -217,7 +219,7 @@ export default function App() {
 
     try {
       // Fetch training metrics & curves
-      const resSim = await fetch('/api/simulate-training', {
+      const resSim = await fetch(`${API_BASE}/api/simulate-training`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
@@ -233,7 +235,7 @@ export default function App() {
       }
 
       // Fetch gradient flow
-      const resGrad = await fetch('/api/gradient-flow', {
+      const resGrad = await fetch(`${API_BASE}/api/gradient-flow`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
@@ -252,7 +254,7 @@ export default function App() {
     if (!meta) return;
     setAllLayersLoading(true);
     try {
-      const res = await fetch('/api/all-layer-heatmaps');
+      const res = await fetch(`${API_BASE}/api/all-layer-heatmaps`);
       if (res.ok) {
         const data = await res.json();
         setAllLayerHeatmaps(data);
