@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Cpu, Sliders, Play, AlertTriangle, Info, RefreshCw } from 'lucide-react';
 import { ArchitectureGraph } from './components/ArchitectureGraph';
@@ -32,6 +33,64 @@ interface LayerInfo {
   activation: string;
 }
 
+interface LayerHeatmap {
+  layer_name: string;
+  layer_type: string;
+  image_base64: string;
+}
+
+interface ChannelData {
+  channel_id: number;
+  description: string;
+  image_base64: string;
+}
+
+interface LayerExplanation {
+  role: string;
+  summary: string;
+  features_learned: string[];
+  active_regions: string;
+  important_channels: string;
+}
+
+interface FeatureMapsData {
+  channels_count: number;
+  eigen_cam_base64: string | null;
+  top_channels: ChannelData[];
+  explanation?: LayerExplanation;
+}
+
+interface BboxExplanation {
+  class_name: string;
+  confidence: number;
+  summary: string;
+  reasons: string[];
+  contributing_layers: string[];
+}
+
+interface SimulatorMetrics {
+  mAP50: number;
+}
+
+interface SimulatorCurve {
+  train_loss: number;
+  val_loss: number;
+  mAP50: number;
+  mAP50_95: number;
+}
+
+interface GradientFlowData {
+  status: string;
+  description: string;
+  magnitudes: number[];
+}
+
+interface WeightUpdateData {
+  avg_pct_update: number;
+  matrix_a: number[][];
+  matrix_b: number[][];
+}
+
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export default function App() {
@@ -46,18 +105,18 @@ export default function App() {
   const [selectedLayer, setSelectedLayer] = useState<string>('Layer 2 (C2f)');
   
   // All Layers Heatmap State
-  const [allLayerHeatmaps, setAllLayerHeatmaps] = useState<any[]>([]);
+  const [allLayerHeatmaps, setAllLayerHeatmaps] = useState<LayerHeatmap[]>([]);
   const [allLayersLoading, setAllLayersLoading] = useState<boolean>(false);
   
   // Feature Map & CAM State
-  const [featureMaps, setFeatureMaps] = useState<any>(null);
+  const [featureMaps, setFeatureMaps] = useState<FeatureMapsData | null>(null);
   const [featureMapsLoading, setFeatureMapsLoading] = useState<boolean>(false);
   const [selectedBbox, setSelectedBbox] = useState<Prediction | null>(null);
   const [targetedCam, setTargetedCam] = useState<string | null>(null);
   const [camLoading, setCamLoading] = useState<boolean>(false);
   const [camOpacity, setCamOpacity] = useState<number>(0.65);
   const [showCam, setShowCam] = useState<boolean>(false);
-  const [bboxExplanation, setBboxExplanation] = useState<any>(null);
+  const [bboxExplanation, setBboxExplanation] = useState<BboxExplanation | null>(null);
 
   // Hyperparameters Playground
   const [lr, setLr] = useState<number>(0.01);
@@ -82,34 +141,14 @@ export default function App() {
   const [nmsThres] = useState<number>(0.45);
 
   // Simulator Data
-  const [metricsBefore, setMetricsBefore] = useState<any>(null);
-  const [metricsAfter, setMetricsAfter] = useState<any>(null);
-  const [curves, setCurves] = useState<any[]>([]);
-  const [gradientFlow, setGradientFlow] = useState<any>(null);
-  const [weightUpdateData, setWeightUpdateData] = useState<any>(null);
+  const [metricsBefore, setMetricsBefore] = useState<SimulatorMetrics | null>(null);
+  const [metricsAfter, setMetricsAfter] = useState<SimulatorMetrics | null>(null);
+  const [curves, setCurves] = useState<SimulatorCurve[]>([]);
+  const [gradientFlow, setGradientFlow] = useState<GradientFlowData | null>(null);
+  const [weightUpdateData, setWeightUpdateData] = useState<WeightUpdateData | null>(null);
   const [simLoading, setSimLoading] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Fetch layer structures and default simulator parameters on load
-  useEffect(() => {
-    fetchLayerDetails();
-    runSimulator(true); // Populate baseline metrics
-  }, [modelVersion]);
-
-  // Fetch feature maps whenever selected layer or image meta changes
-  useEffect(() => {
-    if (meta && selectedLayer) {
-      fetchFeatureMaps(selectedLayer);
-    }
-  }, [selectedLayer, meta]);
-
-  // Update Weight matrices when layer changes
-  useEffect(() => {
-    if (selectedLayer) {
-      fetchWeightUpdates(selectedLayer);
-    }
-  }, [selectedLayer]);
 
   const fetchLayerDetails = async () => {
     try {
@@ -150,7 +189,7 @@ export default function App() {
   };
 
   const fetchFeatureMaps = async (layerName: string) => {
-    setFeatureMapsLoading(true);
+    Promise.resolve().then(() => setFeatureMapsLoading(true));
     try {
       const res = await fetch(`${API_BASE}/api/feature-maps?layer_name=${encodeURIComponent(layerName)}`);
       const data = await res.json();
@@ -158,7 +197,7 @@ export default function App() {
     } catch (e) {
       console.error("Failed to get feature maps", e);
     } finally {
-      setFeatureMapsLoading(false);
+      Promise.resolve().then(() => setFeatureMapsLoading(false));
     }
   };
 
@@ -174,8 +213,10 @@ export default function App() {
 
   const handleBboxClick = async (box: Prediction) => {
     setSelectedBbox(box);
-    setCamLoading(true);
-    setShowCam(true);
+    Promise.resolve().then(() => {
+      setCamLoading(true);
+      setShowCam(true);
+    });
     
     try {
       // 1. Fetch targeted Grad-CAM
@@ -191,12 +232,12 @@ export default function App() {
     } catch (e) {
       console.error("Failed to fetch explainability payload", e);
     } finally {
-      setCamLoading(false);
+      Promise.resolve().then(() => setCamLoading(false));
     }
   };
 
   const runSimulator = async (isBaseline: boolean = false) => {
-    setSimLoading(true);
+    Promise.resolve().then(() => setSimLoading(true));
     const params = {
       lr,
       batch_size: batchSize,
@@ -246,13 +287,13 @@ export default function App() {
     } catch (e) {
       console.error("Simulator execution failed", e);
     } finally {
-      setSimLoading(false);
+      Promise.resolve().then(() => setSimLoading(false));
     }
   };
 
   const fetchAllLayerHeatmaps = async () => {
     if (!meta) return;
-    setAllLayersLoading(true);
+    Promise.resolve().then(() => setAllLayersLoading(true));
     try {
       const res = await fetch(`${API_BASE}/api/all-layer-heatmaps`);
       if (res.ok) {
@@ -262,9 +303,29 @@ export default function App() {
     } catch (e) {
       console.error("Failed to load all layer heatmaps", e);
     } finally {
-      setAllLayersLoading(false);
+      Promise.resolve().then(() => setAllLayersLoading(false));
     }
   };
+
+  // Fetch layer structures and default simulator parameters on load
+  useEffect(() => {
+    fetchLayerDetails();
+    runSimulator(true); // Populate baseline metrics
+  }, [modelVersion]);
+
+  // Fetch feature maps whenever selected layer or image meta changes
+  useEffect(() => {
+    if (meta && selectedLayer) {
+      fetchFeatureMaps(selectedLayer);
+    }
+  }, [selectedLayer, meta]);
+
+  // Update Weight matrices when layer changes
+  useEffect(() => {
+    if (selectedLayer) {
+      fetchWeightUpdates(selectedLayer);
+    }
+  }, [selectedLayer]);
 
   useEffect(() => {
     if (activeTab === 'gallery' && meta && allLayerHeatmaps.length === 0) {

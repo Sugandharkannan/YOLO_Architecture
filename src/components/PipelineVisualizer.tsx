@@ -23,13 +23,15 @@ export const PipelineVisualizer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(true);
 
   useEffect(() => {
-    let interval: any;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (isPlaying) {
       interval = setInterval(() => {
         setActiveStep((prev) => (prev + 1) % (PIPELINE_STEPS.length + 1));
       }, 2500);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [isPlaying]);
 
   const handleReset = () => {
