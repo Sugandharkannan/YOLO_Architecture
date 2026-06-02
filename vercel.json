@@ -1,4 +1,5 @@
 {
+  "framework": "vite",
   "outputDirectory": "dist",
   "cleanUrls": true,
   "rewrites": [
