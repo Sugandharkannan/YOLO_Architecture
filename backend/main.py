@@ -89,10 +89,21 @@ async def upload_image(
 ):
     global last_processed_img_path, last_feature_maps, last_metadata
     
-    # Save the file
+    # Read the file contents into memory
+    contents = await file.read()
+    nparr = np.frombuffer(contents, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    
     file_path = os.path.join(UPLOAD_DIR, file.filename)
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    if img is not None:
+        # Resize to exactly 640x640 to align with YOLO model input
+        # and match the frontend's coordinate projection
+        img_resized = cv2.resize(img, (640, 640))
+        cv2.imwrite(file_path, img_resized)
+    else:
+        # Fallback if cv2 decode fails
+        with open(file_path, "wb") as buffer:
+            buffer.write(contents)
         
     last_processed_img_path = file_path
     
@@ -110,6 +121,8 @@ async def upload_image(
         metadata["image_base64"] = img_to_base64(file_path)
         return metadata
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Inference failed: {str(e)}")
 
 @app.get("/api/layer-details")

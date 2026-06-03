@@ -37,27 +37,48 @@ class CAMGenerator:
     @staticmethod
     def generate_eigen_cam(activation_tensor: torch.Tensor, target_size: Tuple[int, int]) -> np.ndarray:
         """
-        Computes Eigen-CAM for a given activation tensor.
+        Computes Eigen-CAM for a given activation tensor using a highly optimized covariance-based formulation.
         activation_tensor: torch.Tensor of shape [1, C, H, W]
         target_size: (width, height) to resize the final heatmap to
         """
         A = CAMGenerator._prepare_activation(activation_tensor)
         C, H, W = A.shape
         
-        # Reshape to [C, H*W]
-        A_flat = A.reshape(C, H * W)
+        # 1. Downsample spatial dimensions if they are large (e.g. Layer 0 at 320x320)
+        # This speeds up calculation on initial layers while preserving the primary principal components
+        max_dim = 80
+        if H > max_dim or W > max_dim:
+            step_h = int(np.ceil(H / max_dim))
+            step_w = int(np.ceil(W / max_dim))
+            A_down = A[:, ::step_h, ::step_w]
+        else:
+            A_down = A
+            
+        C_down, H_down, W_down = A_down.shape
+        A_flat = A_down.reshape(C_down, H_down * W_down)
         
-        # Zero center
+        # 2. Zero center
         A_mean = A_flat - np.mean(A_flat, axis=1, keepdims=True)
         
-        # SVD
+        # 3. Optimized SVD via Covariance Matrix Eigen-Decomposition
+        # Instead of SVD on C x (H*W) matrix directly, compute C x C covariance matrix: Cov = A_mean @ A_mean.T.
+        # Since C is small, finding eigenvectors of Cov is extremely fast.
+        # The principal right singular vector Vt[0] is proportional to A_mean.T @ u1.
         try:
-            # We want the first principal component of the spatial activations
-            U, S, Vt = np.linalg.svd(A_mean, full_matrices=False)
-            cam = Vt[0].reshape(H, W)
+            cov = np.dot(A_mean, A_mean.T)
+            # np.linalg.eigh returns eigenvalues/vectors in ascending order
+            eigvals, eigvecs = np.linalg.eigh(cov)
+            u1 = eigvecs[:, -1]  # eigenvector corresponding to the largest eigenvalue
+            
+            # Project back to spatial dimensions
+            cam = np.dot(A_mean.T, u1).reshape(H_down, W_down)
+            
+            # Correct the sign ambiguity: ensure the heatmap highlights positive activations
+            if np.sum(cam * np.mean(A_down, axis=0)) < 0:
+                cam = -cam
         except Exception:
-            # Fallback if SVD fails: simple average of activations across channels
-            cam = np.mean(A, axis=0)
+            # Fallback if decomposition fails: average of activations across channels
+            cam = np.mean(A_down, axis=0)
 
         # Normalize cam to [0, 1]
         cam_min, cam_max = cam.min(), cam.max()

@@ -7,16 +7,50 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node / Frontend Build
 node_modules
 dist
 dist-ssr
+build
 *.local
+
+# Python Virtual Environments
+venv/
+.venv/
+env/
+backend/venv/
+backend/.venv/
+backend/env/
+
+# Python Caches & Compiled bytecode
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+*.pyo
+
+# Model weights & YOLO assets
+*.pt
+*.pth
+yolov8n.pt
+backend/yolov8n.pt
+
+# User Uploads (Run-time state)
+backend/uploads/
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj

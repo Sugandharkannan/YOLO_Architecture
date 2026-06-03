@@ -5,8 +5,8 @@ import numpy as np
 import cv2
 from typing import Dict, List, Tuple, Any
 
-# Ensure CPU usage is explicit if CUDA is not available or preferred
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# Ensure CPU usage is explicit to avoid CUDA/torchvision NMS compatibility issues
+device = torch.device("cpu")
 
 # High-Fidelity PyTorch Fallback Model
 # This generates realistic intermediate activations by actually convolving the input image
@@ -205,8 +205,8 @@ class YOLOModelManager:
             try:
                 # Clear activations map
                 self.activations.clear()
-                # Run actual forward pass
-                results = self.real_model(img_path, verbose=False)[0]
+                # Run actual forward pass on CPU to ensure torchvision NMS operator compatibility
+                results = self.real_model(img_path, verbose=False, device="cpu")[0]
                 
                 # Extract predictions
                 boxes = results.boxes

@@ -73,8 +73,8 @@ interface SimulatorMetrics {
 }
 
 interface SimulatorCurve {
-  train_loss: number;
-  val_loss: number;
+  train_loss: number | string;
+  val_loss: number | string;
   mAP50: number;
   mAP50_95: number;
 }
@@ -340,7 +340,12 @@ export default function App() {
     const w = 240;
     const h = 80;
     
-    const validCurves = curves.filter(c => c.train_loss !== "NaN" && c.val_loss !== "NaN");
+    const validCurves = curves
+      .filter(c => c.train_loss !== "NaN" && c.val_loss !== "NaN")
+      .map(c => ({
+        train_loss: Number(c.train_loss),
+        val_loss: Number(c.val_loss)
+      }));
     if (validCurves.length === 0) return (
       <div className="flex items-center justify-center h-[80px] bg-red-950/20 text-red-400 text-xs font-mono rounded">
         NaN / Exploding Gradients
