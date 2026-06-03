@@ -5,8 +5,11 @@ from typing import Dict, Any, Tuple
 
 class CAMGenerator:
     @staticmethod
-    def _prepare_activation(activation_tensor: torch.Tensor) -> np.ndarray:
-        act_np = activation_tensor.detach().cpu().numpy()
+    def _prepare_activation(activation_tensor: Any) -> np.ndarray:
+        if isinstance(activation_tensor, np.ndarray):
+            act_np = activation_tensor
+        else:
+            act_np = activation_tensor.detach().cpu().numpy()
         
         # Remove batch dimension if it is 1
         if act_np.ndim > 1 and act_np.shape[0] == 1:

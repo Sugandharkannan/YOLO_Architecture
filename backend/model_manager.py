@@ -205,8 +205,9 @@ class YOLOModelManager:
             try:
                 # Clear activations map
                 self.activations.clear()
-                # Run actual forward pass on CPU to ensure torchvision NMS operator compatibility
-                results = self.real_model(img_path, verbose=False, device="cpu")[0]
+                # Run actual forward pass on CPU under no_grad to minimize memory consumption
+                with torch.no_grad():
+                    results = self.real_model(img_path, verbose=False, device="cpu")[0]
                 
                 # Extract predictions
                 boxes = results.boxes
@@ -222,11 +223,11 @@ class YOLOModelManager:
                         "class_name": name
                     })
 
-                # Copy activations
-                # Add original input as layer -1
-                feature_maps["Input"] = img_tensor.clone()
+                # Copy activations as NumPy arrays to release PyTorch graph/memory overhead
+                feature_maps["Input"] = img_tensor.cpu().numpy()
                 for k, v in self.activations.items():
-                    feature_maps[k] = v.clone()
+                    feature_maps[k] = v.cpu().numpy()
+                self.activations.clear()
 
             except Exception as e:
                 print(f"Real model inference failed ({e}), falling back to mock inference.")
@@ -237,10 +238,15 @@ class YOLOModelManager:
         metadata["predictions"] = predictions
         return metadata, feature_maps
 
-    def _run_fallback_inference(self, img_tensor: torch.Tensor, original_w: int, original_h: int) -> Tuple[List[Dict[str, Any]], Dict[str, torch.Tensor]]:
+    def _run_fallback_inference(self, img_tensor: torch.Tensor, original_w: int, original_h: int) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
         # Run fallback PyTorch convolutional layers to get realistic feature maps
         with torch.no_grad():
             feature_maps = self.fallback_model(img_tensor)
+
+        # Convert to numpy arrays to release PyTorch memory
+        feature_maps_np = {}
+        for k, v in feature_maps.items():
+            feature_maps_np[k] = v.cpu().numpy()
 
         # Generate mock predictions based on basic image properties
         # This simulates bounding boxes (e.g. detecting a person, dog, cup) depending on standard classes
@@ -259,7 +265,7 @@ class YOLOModelManager:
                 "class_name": "dog"
             }
         ]
-        return predictions, feature_maps
+        return predictions, feature_maps_np
 
     def get_layer_structure(self) -> List[Dict[str, Any]]:
         # Return architectural details of all layers
